@@ -16,7 +16,6 @@ class AffineCouplingLayer(nn.Module):
             nn.Linear(out_features, out_features, bias=bias),
             nn.LeakyReLU(),
             nn.Linear(out_features, in_features // 2, bias=bias),
-            nn.LeakyReLU(),
         )
         self.shift_linear_layers = nn.Sequential(
             nn.Linear(in_features // 2, out_features, bias=bias),
@@ -28,7 +27,6 @@ class AffineCouplingLayer(nn.Module):
             nn.Linear(out_features, out_features, bias=bias),
             nn.LeakyReLU(),
             nn.Linear(out_features, in_features // 2, bias=bias),
-            nn.LeakyReLU(),
         )
 
     def forward(self, z):
@@ -42,7 +40,7 @@ class AffineCouplingLayer(nn.Module):
     def inverse(self, y):
         yl, yr = y.chunk(2, dim=1)
         log_s, b = self.scale_linear_layers(yl), self.shift_linear_layers(yl)
-        zl, zr = yl, (yr - b) / log_s.exp()
+        zl, zr = yl, (yr - b) / torch.exp(log_s)
         log_det_jacobian = -log_s.sum(dim=1)
         # log_det_jacobian = - torch.sum(torch.log(torch.abs(log_s.exp())), dim=1)
         return torch.cat([zl, zr], dim=1), log_det_jacobian

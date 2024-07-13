@@ -1,3 +1,5 @@
+import numpy as np
+
 import create_data, engine, model_builder, utils
 import torch
 from matplotlib import pyplot as plt
@@ -19,17 +21,17 @@ def Q1_Loss(num_epochs, results):
     :return:
     """
     validation_loss = results["validation_loss"]
-    total_log_det = results["-log_det"]
-    total_log_prob = results["-log_prob"]
+    total_log_det = results["total_log_det"]
+    total_log_prob = results["total_log_prob"]
     epochs_range = range(num_epochs)
 
     plt.figure(figsize=(8, 8))
     plt.plot(epochs_range, validation_loss, label="Validation Loss")
-    plt.plot(epochs_range, total_log_det, label="Total Log Determinant")
-    plt.plot(epochs_range, total_log_prob, label="Total Log Probability")
+    plt.plot(epochs_range, total_log_det, label="-log_det")
+    plt.plot(epochs_range, total_log_prob, label="-log_prob")
     plt.legend()
     plt.xlabel("Epochs")
-    plt.ylabel("Validaiton Loss")
+    plt.ylabel("Validation Loss")
     plt.title("Validation Loss over epochs")
     plt.xticks(ticks=range(num_epochs))  # Set x-axis ticks to integer values of epochs
     plt.tight_layout()
@@ -39,6 +41,14 @@ def Q1_Loss(num_epochs, results):
 
 
 def generate_samples(model, num_samples, seed=None, return_original=False, device=None):
+    '''
+    :param model:
+    :param num_samples:
+    :param seed:
+    :param return_original:
+    :param device:
+    :return:
+    '''
     if seed is not None:
         torch.manual_seed(seed)
     z = torch.randn(num_samples, 2, device=device)
@@ -51,18 +61,29 @@ def generate_samples(model, num_samples, seed=None, return_original=False, devic
     return samples.detach().cpu().numpy()
 
 
-def Q2_sampling(model):
-    seeds = [541, 66, 86]
-    samples = [generate_samples(model, 1000, seed=seed) for seed in seeds]
+def Q2_sampling(model, seeds=(24, 42, 34), n_samples=1000):
+    samples = [generate_samples(model, n_samples, seed=seed) for seed in seeds]
     utils.plot_samples(samples,
                        header="Generated Samples from Normalizing Flow Model",
                        sub_headers=[f"Samples from seed {seed}" for seed in seeds],
                        filename=f"{PLOTS_DIR}/Q2_random_samples.png")
 
 
-def main():
-    ###################################### Configuration Setup #########################################################
+def Q3_sampling_over_time(model, n_layers=5, n_samples=1000):
+    outputs = generate_samples(model, n_samples, get_trajectory=True)
+    sub_outputs = np.array(outputs)[[i for i in range(0, len(outputs), len(outputs) // n_layers)]]
+    utils.plot_samples(sub_outputs,
+                       sub_headers=["Prior samples"] +
+                                   [f"Output after {i}/{n_layers} of the way"
+                                    for i in range(1, n_layers + 1)],
+                       header="Sampling Over Time",
+                       filename=f"{PLOTS_DIR}/Q3_sampling_over_time.png")
 
+
+def main():
+    ####################################################################################################################
+    ########################################## Configuration Setup #####################################################
+    ####################################################################################################################
     config = {
         "optimizer": torch.optim.Adam,
         "learning_rate": 1e-3,
@@ -77,10 +98,9 @@ def main():
     }
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {device} device")
-
-    #######################################################################################################################
-    # data = create_data.create_unconditional_olympic_rings(config["number_of_data_points"], ring_thickness=0.25, verbose=True)
-
+    ####################################################################################################################
+    ############################################## Initalization #######################################################
+    ####################################################################################################################
     train_loader = utils.get_dataloader(config["train_size"], shuffle=True, batch_size=config["batch_size"], show=False)
     validation_loader = utils.get_dataloader(config["validation_size"], shuffle=False, batch_size=config["batch_size"],
                                              show=False)
@@ -93,24 +113,33 @@ def main():
     criterion = model_builder.NormalizingFlowCriterion()
     optimizer = config["optimizer"](model.parameters(), lr=config["learning_rate"])
     scheduler = config["lr_scheduler"](optimizer, T_max=epochs)
-    start_time = time.time()
-    results = engine.train(model=model,
-                           train_loader=train_loader,
-                           val_loader=validation_loader,
-                           criterion=criterion,
-                           optimizer=optimizer,
-                           scheduler=scheduler,
-                           epochs=epochs,
-                           device=device,
-                           save=True,
-                           model_save_path=MODEL_PATH,
-                           train_results_path=RESULTS_PATH)
-    end_time = time.time()
-    total_time = end_time - start_time
-    print(f"Total training time: {total_time} seconds")
+    ####################################################################################################################
+    ############################################## Train Phase #########################################################
+    ####################################################################################################################
+    # start_time = time.time()
+    # results = engine.train(model=model,
+    #                        train_loader=train_loader,
+    #                        val_loader=validation_loader,
+    #                        criterion=criterion,
+    #                        optimizer=optimizer,
+    #                        scheduler=scheduler,
+    #                        epochs=epochs,
+    #                        device=device,
+    #                        save=True,
+    #                        model_save_dir_path=MODEL_PATH,
+    #                        train_results_dir_path=RESULTS_PATH)
+    # end_time = time.time()
+    # total_time = end_time - start_time
+    # print(f"Total training time: {total_time} seconds")
+    ###################################################################################################################
+    ######################################## Question Answering #######################################################
+    ###################################################################################################################
+    model, results = utils.load_model(model_path=f"{MODEL_PATH}/nf_20_epochs.pth",
+                                      results_path=f"{RESULTS_PATH}/nf_20_epochs.pkl", device=device)
     Q1_Loss(epochs, results)
-    model, results = utils.load_model(model_path=f"{MODEL_PATH}/nf_20_epochs.pth",results_path=f"{RESULTS_PATH}/nf_20_epochs.pkl",device=device)
-    Q2_sampling(model)
+    Q2_sampling(model, seeds=(541, 66, 86), n_samples=1000)
+    # Q3_sampling_over_time(model)
+
 
 if __name__ == '__main__':
     main()

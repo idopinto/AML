@@ -5,19 +5,12 @@ from torch import nn
 from torch.optim import optimizer
 from tqdm.auto import tqdm
 import os
+from pathlib import Path
 import datetime
+import utils
+
 
 def training_step(model, train_loader, criterion, optimizer, scheduler, device):
-    '''
-    This is the training step function.
-    :param model:
-    :param train_loader:
-    :param criterion:
-    :param optimizer:
-    :param scheduler:
-    :param device:
-    :return:
-    '''
     model.train()
     training_loss = 0
     for batch in train_loader:
@@ -34,14 +27,6 @@ def training_step(model, train_loader, criterion, optimizer, scheduler, device):
 
 
 def validation_step(model, val_loader, criterion, device):
-    """
-    This is the validation step function.
-    :param model:
-    :param val_loader:
-    :param criterion:
-    :param device:
-    :return:
-    """
     model.eval()
     val_loss = total_log_det = total_log_prob = 0
     with torch.inference_mode():
@@ -56,22 +41,7 @@ def validation_step(model, val_loader, criterion, device):
 
 
 def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epochs, device, save=True,
-          model_save_path=None, train_results_path=None):
-    """
-    This function is used to train the model.
-    :param model: The model to be trained.
-    :param train_loader: The training data loader.
-    :param val_loader: The validation data loader.
-    :param criterion: The loss function.
-    :param optimizer: The optimizer.
-    :param scheduler: The learning rate scheduler.
-    :param epochs: The number of epochs to train the model.
-    :param device: The device to train the model on.
-    :param save: Whether to save the model weights.
-    :param model_save_path: The path to save the model weights.
-    :param train_results_path: Path to save the training results.
-    :return: training loss and validation loss.
-    """
+          model_save_dir_path=None, train_results_dir_path=None):
     results = {
         "train_loss": [],
         "validation_loss": [],
@@ -88,12 +58,8 @@ def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epoc
         if epoch % 1 == 0:
             print(f'Epoch {epoch + 1}/{epochs} | Training Loss: {training_loss} | Validation Loss: {validation_loss}')
     if save:
-        # from datetime import datetime
-        # current_date_time = datetime.now()
-        os.makedirs(model_save_path, exist_ok=True)
-        torch.save(model, f'{model_save_path}/nf_{epochs}_epochs.pth')
-        os.makedirs(train_results_path, exist_ok=True)
-        with open(f'{train_results_path}/nf_{epochs}_epochs.pkl', 'wb') as file:
-            pickle.dump(results, file)
+        model_path = f"nf_model_{epochs}_epochs.pth"
+        results_path = f"nf_results_{epochs}_epochs.pkl"
+        utils.save_model(model, results, model_save_dir_path, train_results_dir_path, model_path, results_path)
 
     return results
