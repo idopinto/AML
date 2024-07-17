@@ -34,7 +34,6 @@ class AffineCouplingLayer(nn.Module):
         log_s, b = self.scale_linear_layers(zl), self.shift_linear_layers(zl)
         yl, yr = zl, log_s.exp() * zr + b
         log_det_jacboian = log_s.sum(dim=1)
-        # log_det_jacboian = torch.sum(torch.log(torch.abs(log_s.exp())), dim=1)
         return torch.cat([yl, yr], dim=1), log_det_jacboian
 
     def inverse(self, y):
@@ -42,7 +41,6 @@ class AffineCouplingLayer(nn.Module):
         log_s, b = self.scale_linear_layers(yl), self.shift_linear_layers(yl)
         zl, zr = yl, (yr - b) / torch.exp(log_s)
         log_det_jacobian = -log_s.sum(dim=1)
-        # log_det_jacobian = - torch.sum(torch.log(torch.abs(log_s.exp())), dim=1)
         return torch.cat([zl, zr], dim=1), log_det_jacobian
 
     # def compute_log_inverse_jacobian_det(self, y):

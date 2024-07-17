@@ -85,3 +85,18 @@ def save_model(model, results, model_save_dir_path, train_results_dir_path, mode
     os.makedirs(train_results_dir_path, exist_ok=True)
     with open(f'{train_results_dir_path}/{results_path}', 'wb') as file:
         pickle.dump(results, file)
+
+
+def generate_samples(model, num_samples, seed=None, return_original=False, get_trajectory=False, device=None):
+    if seed is not None:
+        torch.manual_seed(seed)
+    z = torch.randn(num_samples, 2, device=device)
+    model.eval()
+    with torch.inference_mode():
+        model = model.to(device)
+        samples = model(z)
+    if get_trajectory:
+        return samples[1]
+    if return_original:
+        return samples.detach().cpu().numpy(), z.detach().cpu().numpy()
+    return samples.detach().cpu().numpy()

@@ -50,7 +50,7 @@ def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epoc
     }
     for epoch in tqdm(range(epochs)):
         training_loss = training_step(model, train_loader, criterion, optimizer, scheduler, device)
-        validation_loss, total_log_det, total_log_prob = validation_step(model, val_loader, criterion, device)
+        validation_loss, total_log_prob, total_log_det= validation_step(model, val_loader, criterion, device)
         results["train_loss"].append(training_loss)
         results["validation_loss"].append(validation_loss)
         results["total_log_det"].append(total_log_det)

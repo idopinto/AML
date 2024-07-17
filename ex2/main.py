@@ -4,6 +4,7 @@ import create_data, engine, model_builder, utils
 import torch
 from matplotlib import pyplot as plt
 import time
+from matplotlib.cm import get_cmap
 
 MODEL_PATH = "checkpoints/normalizing_flow_models"
 RESULTS_PATH = 'checkpoints/normalizing_flow_results'
@@ -40,44 +41,143 @@ def Q1_Loss(num_epochs, results):
     # plt.close()
 
 
-def generate_samples(model, num_samples, seed=None, return_original=False, device=None):
-    '''
-    :param model:
-    :param num_samples:
-    :param seed:
-    :param return_original:
-    :param device:
-    :return:
-    '''
-    if seed is not None:
-        torch.manual_seed(seed)
-    z = torch.randn(num_samples, 2, device=device)
-    model.eval()
-    with torch.inference_mode():
-        model = model.to(device)
-        samples = model(z)
-    if return_original:
-        return samples.detach().cpu().numpy(), z.detach().cpu().numpy()
-    return samples.detach().cpu().numpy()
-
-
 def Q2_sampling(model, seeds=(24, 42, 34), n_samples=1000):
-    samples = [generate_samples(model, n_samples, seed=seed) for seed in seeds]
+    samples = [utils.generate_samples(model, n_samples, seed=seed) for seed in seeds]
     utils.plot_samples(samples,
                        header="Generated Samples from Normalizing Flow Model",
                        sub_headers=[f"Samples from seed {seed}" for seed in seeds],
                        filename=f"{PLOTS_DIR}/Q2_random_samples.png")
 
 
-def Q3_sampling_over_time(model, n_layers=5, n_samples=1000):
-    outputs = generate_samples(model, n_samples, get_trajectory=True)
-    sub_outputs = np.array(outputs)[[i for i in range(0, len(outputs), len(outputs) // n_layers)]]
+def pass_layer_by_layer(model, layer_outputs, inverse=False, device='cpu'):
+    model = model.to(device)
+    z = layer_outputs[0]
+    model.eval()
+    with torch.inference_mode():
+        for i, layer in enumerate(model.interleaving_affine_coupling_layers):
+            z, _ = layer(z) if inverse else layer.inverse(z)
+            layer_outputs.append(z)
+    return layer_outputs
+
+
+def Q3_sampling_over_time(model, seed=66, n_layers=15, to_divide=5, n_samples=1000, device='cpu'):
+    if seed is not None:
+        torch.manual_seed(seed)
+    z = torch.randn(n_samples, 2, device=device)
+    layer_outputs = pass_layer_by_layer(model, layer_outputs=[z], device=device)
+    sub_outputs = [layer_outputs[i] for i in range(0, n_layers * 2 + 1, (n_layers * 2) // to_divide)]
     utils.plot_samples(sub_outputs,
                        sub_headers=["Prior samples"] +
-                                   [f"Output after {i}/{n_layers} of the way"
-                                    for i in range(1, n_layers + 1)],
+                                   [f"Output after {i}/{to_divide} of the way"
+                                    for i in range(1, to_divide + 1)],
                        header="Sampling Over Time",
                        filename=f"{PLOTS_DIR}/Q3_sampling_over_time.png")
+
+
+# def f(x_coords, y_coords):
+#     num_trajectories, points_per_trajectory = x_coords.shape
+#     points_colors = np.linspace(0, 1, points_per_trajectory)
+#     line_colors = np.linspace(0, 1, num_trajectories)
+#     for
+def Q4_sampling_trajectories(model, n_samples=10, seed=66, device='cpu'):
+    '''
+    Sample points from your model and present the forward process of them layer by
+    layer, as a trajectory in a 2D space. Color the points according to their time t.
+    :param model:
+    :return:
+    '''
+    torch.manual_seed(seed)
+    z = torch.randn(n_samples, 2, device=device)
+    layer_outputs = pass_layer_by_layer(model, layer_outputs=[z], device=device)
+    plot_trajectories(n_samples=n_samples, layer_outputs=layer_outputs)
+
+def Q5_probability_estimation(model, seed=66, device='cpu'):
+    '''
+    For 5 points of your choice, present the inverse process layer by layer, as a trajectory
+    in a 2D space. Choose 3 points from inside the olympic logo and 2 outside of it. Color the points according to
+    their time t
+    :param model:
+    :param n_samples:
+    :param seed:
+    :param device:
+    :return:
+    '''
+    torch.manual_seed(seed)
+    points = torch.tensor([[-1, -2],  # extreme outlier
+                           [1, -1.5],  # mild outlier
+                           [0.5, -1.8],  # 1-intersection inlier
+                           [0, -1],  # 2-intersection inlier
+                           [3, 0]])  # 3-intersection inlier
+    # print(points.shape)
+    layer_outputs = pass_layer_by_layer(model,inverse=True, layer_outputs=[points], device=device)
+    plot_trajectories(n_samples=points.shape[0], layer_outputs=layer_outputs)
+    model.eval()
+    with torch.inference_mode():
+        log_probs, _, _ = model.log_probability(points)
+        print(log_probs.shape)
+        for i in range(points.shape[0]):
+            print(f"point {i}: {log_probs[i]}")
+
+
+
+def plot_trajectories(n_samples=1, layer_outputs=None):
+    plt.figure(figsize=(10, 8))
+
+    edge_cmap = get_cmap('plasma')
+    point_cmap = get_cmap('viridis')
+    num_layers = len(layer_outputs)
+
+    # Plot trajectories (lines) with consistent color for each sample using edge_cmap
+    for i in range(n_samples):
+        x_vals = [layer_outputs[j][i, 0].item() for j in range(num_layers)]
+        y_vals = [layer_outputs[j][i, 1].item() for j in range(num_layers)]
+        plt.plot(x_vals, y_vals, color=edge_cmap(i / n_samples), alpha=0.5, linestyle='-')
+
+    # Overlay points with colors changing according to layer index using point_cmap
+    for t, output in enumerate(layer_outputs):
+        # if t >= 30:
+        plt.scatter(output[:, 0].cpu().numpy(), output[:, 1].cpu().numpy(),
+                    color=point_cmap(t / num_layers), label=f'Time {t}' if t == 0 else None)
+
+    plt.title('Trajectories of Sampled Points Over Time')
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
+    plt.legend(loc='best')
+    sm_point = plt.cm.ScalarMappable(cmap=point_cmap)
+    sm_point.set_array([])
+    cbar_point = plt.colorbar(sm_point, pad=0.1)
+    cbar_point.set_label('Time (Layer Index)')
+
+    plt.grid(True)
+    plt.savefig(f'{PLOTS_DIR}/Q4_sampling_trajectories.png')
+    plt.show()
+
+
+def plot_samples(samples_list, sub_headers, header, filename=None, color_map=None, labels=None, n_cols=3):
+    n_plots = len(samples_list)
+    num_cols = min(n_cols, n_plots)
+    num_rows = int(np.ceil(n_plots / num_cols))
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=(5 * num_cols, 5 * num_rows))
+    if num_rows == 1: axs = [axs]
+    if num_cols == 1: axs = [axs]
+    i = 0
+    for row in range(num_rows):
+        while True:
+            samples = samples_list[i]
+            if labels != None and color_map:
+                colors = [color_map[label.item()] for label in labels]
+                axs[row][i % num_cols].scatter(samples[:, 0], samples[:, 1], c=colors, s=10)
+            else:
+                axs[row][i % num_cols].scatter(samples[:, 0], samples[:, 1], s=10)
+            axs[row][i % num_cols].set_aspect('equal', adjustable='box')
+            axs[row][i % num_cols].set_title(sub_headers[i])
+            i += 1
+            if i % num_cols == 0 or i == n_plots: break
+        if i == n_plots: break
+
+    plt.suptitle(header)
+    if filename: plt.savefig(filename)
+    plt.show()
 
 
 def main():
@@ -136,9 +236,12 @@ def main():
     ###################################################################################################################
     model, results = utils.load_model(model_path=f"{MODEL_PATH}/nf_20_epochs.pth",
                                       results_path=f"{RESULTS_PATH}/nf_20_epochs.pkl", device=device)
-    Q1_Loss(epochs, results)
-    Q2_sampling(model, seeds=(541, 66, 86), n_samples=1000)
-    # Q3_sampling_over_time(model)
+    # Q1_Loss(epochs, results)
+    # Q2_sampling(model, seeds=(541, 66, 86), n_samples=1000)
+    # Q3_sampling_over_time(model, n_layers=15, n_samples=1000, device=device)
+    # Q4_sampling_trajectories(model, n_samples=10, device=device)
+    # data = create_data.create_unconditional_olympic_rings(n_points=50000)
+    Q5_probability_estimation(model)
 
 
 if __name__ == '__main__':
