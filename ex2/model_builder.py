@@ -2,7 +2,9 @@ import torch
 from torch import nn
 from torch.distributions import MultivariateNormal
 
-
+#######################################################################
+############################# Models ##################################
+#######################################################################
 class AffineCouplingLayer(nn.Module):
     def __init__(self, in_features, out_features, bias=True):
         super(AffineCouplingLayer, self).__init__()
@@ -93,6 +95,36 @@ class NormalizingFlowModel(nn.Module):
                                 torch.eye(z.shape[1], device=z.device))
         prior_log_probability = Pz.log_prob(z)
         return prior_log_probability + log_inv_jacobian_det, prior_log_probability, log_inv_jacobian_det
+
+
+class UnconditionalFlowMatchingModel(nn.Module):
+    def __init__(self, in_features, out_features, bias=True):
+        super(UnconditionalFlowMatchingModel, self).__init__()
+        self.fc_layers = nn.Sequential(
+            nn.Linear(in_features + 1, out_features, bias=bias),
+            nn.LeakyReLU(),
+            nn.Linear(out_features, out_features, bias=bias),
+            nn.LeakyReLU(),
+            nn.Linear(out_features, out_features, bias=bias),
+            nn.LeakyReLU(),
+            nn.Linear(out_features, out_features, bias=bias),
+            nn.LeakyReLU(),
+            nn.Linear(out_features, in_features, bias=bias),
+        )
+
+    def forward(self, y, t):
+        y_t = torch.cat((y, t), dim=1)
+        return self.fc_layers(y_t)
+
+###########################################################################
+############################# Criterions ##################################
+###########################################################################
+class FlowMatchingCriterion(nn.Module):
+    def __init__(self):
+        super(FlowMatchingCriterion, self).__init__()
+
+    def forward(self, v_hat_t, y_0, y_1):
+        return (torch.linalg.norm(v_hat_t - (y_1 - y_0)) ** 2).mean()
 
 
 class NormalizingFlowCriterion(nn.Module):

@@ -51,8 +51,9 @@ def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epoc
         if epoch % 1 == 0:
             print(f'Epoch {epoch + 1}/{epochs} | Training Loss: {training_loss} | Validation Loss: {validation_loss}')
     if save:
-        model_path = f"nf_model_{epochs}_epochs.pth"
-        results_path = f"nf_results_{epochs}_epochs.pkl"
+        model_path = f"fm_model_{epochs}_epochs.pth"
+        results_path = f"fm_results_{epochs}_epochs.pkl"
         utils.save_model(model, results, model_save_dir_path, train_results_dir_path, model_path, results_path)
 
     return results
+
