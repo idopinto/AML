@@ -1,6 +1,6 @@
 import numpy as np
 
-import create_data, engine, model_builder, utils
+import create_data, normalizing_flow_engine, model_builder, utils
 import torch
 from matplotlib import pyplot as plt
 import time
@@ -156,10 +156,10 @@ def main():
     ####################################################################################################################
     ############################################## Initalization #######################################################
     ####################################################################################################################
-
-    train_loader = utils.get_dataloader(config["train_size"], shuffle=True, batch_size=config["batch_size"], show=False)
-    validation_loader = utils.get_dataloader(config["validation_size"], shuffle=False, batch_size=config["batch_size"],
-                                             show=False)
+    train_loader = utils.get_dataloader(n_points=config["train_size"], batch_size=config["batch_size"], show=False,
+                                        shuffle=True)
+    validation_loader = utils.get_dataloader(n_points=config["validation_size"], batch_size=config["batch_size"],
+                                             show=False, shuffle=False)
 
     model = model_builder.NormalizingFlowModel(n_layers=config["n_layers"],
                                                in_features=config["in_features"],
@@ -173,23 +173,23 @@ def main():
     ####################################################################################################################
     ############################################## Train Phase #########################################################
     ####################################################################################################################
-    # start_time = time.time()
-    # results = engine.train(model=model,
-    #                        train_loader=train_loader,
-    #                        val_loader=validation_loader,
-    #                        criterion=criterion,
-    #                        optimizer=optimizer,
-    #                        scheduler=scheduler,
-    #                        epochs=epochs,
-    #                        device=device,
-    #                        save=True,
-    #                        model_save_dir_path=MODEL_PATH,
-    #                        train_results_dir_path=RESULTS_PATH)
-    # end_time = time.time()
-    # total_time = end_time - start_time
-    # total_time_minutes = total_time // 60
-    # total_time_seconds = total_time % 60
-    # print(f"Total training time: {total_time_minutes} minutes and {total_time_seconds} seconds")
+    start_time = time.time()
+    results = normalizing_flow_engine.train(model=model,
+                                            train_loader=train_loader,
+                                            val_loader=validation_loader,
+                                            criterion=criterion,
+                                            optimizer=optimizer,
+                                            scheduler=scheduler,
+                                            epochs=epochs,
+                                            device=device,
+                                            save=True,
+                                            model_save_dir_path=MODEL_PATH,
+                                            train_results_dir_path=RESULTS_PATH)
+    end_time = time.time()
+    total_time = end_time - start_time
+    total_time_minutes = total_time // 60
+    total_time_seconds = total_time % 60
+    print(f"Total training time: {total_time_minutes} minutes and {total_time_seconds} seconds")
     ###################################################################################################################
     ######################################## Question Answering #######################################################
     ###################################################################################################################

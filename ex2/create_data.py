@@ -64,7 +64,6 @@ def generate_points_on_rings__unconditional(centers, radius, thickness, num_poin
 def create_olympic_rings(n_points, ring_thickness=0.25, verbose=True):
     num_points_per_ring = n_points // 5
     sampled_points, labels = sample_olympic_rings(num_points_per_ring, ring_thickness)
-
     # Plotting the points
     if verbose:
         x, y = zip(*sampled_points)

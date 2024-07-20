@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.distributions import MultivariateNormal
 
+
 #######################################################################
 ############################# Models ##################################
 #######################################################################
@@ -76,6 +77,7 @@ class NormalizingFlowModel(nn.Module):
                 AffineCouplingLayer(in_features, out_features, bias=bias)
             )
             self.interleaving_affine_coupling_layers.append(PermutationLayer(in_features))
+        self.model_name = "nf"
 
     def forward(self, z):
         for i, layer in enumerate(self.interleaving_affine_coupling_layers):
@@ -111,10 +113,24 @@ class UnconditionalFlowMatchingModel(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(out_features, in_features, bias=bias),
         )
+        self.model_name = "fm"
 
     def forward(self, y, t):
         y_t = torch.cat((y, t), dim=1)
         return self.fc_layers(y_t)
+
+
+class ConditionalFlowMatchingModel(UnconditionalFlowMatchingModel):
+    def __init__(self, in_features, out_features, num_classes, embedding_dim, bias=True):
+        super(ConditionalFlowMatchingModel, self).__init__(in_features, out_features, bias)
+        self.embedding = nn.Embedding(num_classes, embedding_dim)
+        self.fc_layers[0] = nn.Linear(in_features=in_features + embedding_dim + 1, out_features=out_features)
+        self.model_name = "cfm"
+    def forward(self, y, t, label=None):
+        label_embed = self.embedding(label)
+        y_t = torch.cat((y, t, label_embed), dim=1)
+        return self.fc_layers(y_t)
+
 
 ###########################################################################
 ############################# Criterions ##################################
