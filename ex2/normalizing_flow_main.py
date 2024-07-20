@@ -10,7 +10,12 @@ RESULTS_PATH = 'checkpoints/normalizing_flow_results'
 PLOTS_DIR = 'plots/normalizing_flows_plots'
 CHECKPOINTS_DIR = 'checkpoints'
 
-
+filenames = [f'{PLOTS_DIR}/Q1_loss_20_epochs.png',
+             f'{PLOTS_DIR}/Q2_random_samples.png',
+             f'{PLOTS_DIR}/Q3_sampling_over_time.png',
+             f'{PLOTS_DIR}/Q4_sampling_trajectories.png',
+             f'{PLOTS_DIR}/Q5_probability_estimation.png',
+             ]
 def pass_layer_by_layer(model, layer_outputs, inverse=False, device='cpu'):
     model = model.to(device)
     points = layer_outputs[0]
@@ -193,16 +198,9 @@ def main():
     ###################################################################################################################
     ######################################## Question Answering #######################################################
     ###################################################################################################################
-    model_path = f"{MODEL_PATH}/nf_model_20_epochs.pth"
-    results_path = f"{RESULTS_PATH}/nf_results_20_epochs.pkl"
-    filenames = [f'{PLOTS_DIR}/Q1_loss_{epochs}_epochs.png',
-                 f'{PLOTS_DIR}/Q2_random_samples.png',
-                 f'{PLOTS_DIR}/Q3_sampling_over_time.png',
-                 f'{PLOTS_DIR}/Q4_sampling_trajectories.png',
-                 f'{PLOTS_DIR}/Q5_probability_estimation.png',
-                 ]
-    model, results = utils.load_model(model_path=model_path,
-                                      results_path=results_path,
+
+    model, results = utils.load_model(model_path=f"{MODEL_PATH}/nf_model_20_epochs.pth",
+                                      results_path=f"{RESULTS_PATH}/nf_results_20_epochs.pkl",
                                       device=device)
     Q1_Loss(epochs, results, filename=filenames[0])
 

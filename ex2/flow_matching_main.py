@@ -23,20 +23,6 @@ c_filenames = [
 ]
 
 
-def Part_2_Q1_Loss(num_epochs, results, filename):
-    epochs_range = range(num_epochs)
-    plt.figure(figsize=(8, 8))
-    plt.plot(epochs_range, results["train_loss"], label="Training Loss")
-    plt.legend()
-    plt.xlabel("Epochs")
-    plt.ylabel("Training Loss")
-    plt.title("Training Loss over epochs")
-    plt.xticks(ticks=epochs_range)
-    plt.tight_layout()
-    plt.savefig(filename)
-    plt.show()
-
-
 def propagate_through_time(model, z, labels=None, initial_t=0, target_t=1, delta_t=0.001, get_trajectory=False):
     trajectory = [z.detach().cpu().numpy()] if get_trajectory else None
     model.eval()
@@ -59,6 +45,20 @@ def propagate_through_time(model, z, labels=None, initial_t=0, target_t=1, delta
                     trajectory.append(z.detach().cpu().numpy())
 
     return (z, trajectory) if get_trajectory else z
+
+
+def Part_2_Q1_Loss(num_epochs, results, filename):
+    epochs_range = range(num_epochs)
+    plt.figure(figsize=(8, 8))
+    plt.plot(epochs_range, results["train_loss"], label="Training Loss")
+    plt.legend()
+    plt.xlabel("Epochs")
+    plt.ylabel("Training Loss")
+    plt.title("Training Loss over epochs")
+    plt.xticks(ticks=epochs_range)
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.show()
 
 
 def Part_2_Q2_flow_progression(model, n_samples, time_steps, delta_t=0.001, device='cpu', filename=""):
@@ -223,7 +223,7 @@ def train_unconditional_flow_matching_model(config, train_mode=True, device='cpu
     optimizer = config["optimizer"](model.parameters(), lr=config["learning_rate"])
     scheduler = config["lr_scheduler"](optimizer, T_max=epochs)
     delta_t = config["delta_t"]
-    results={}
+    results = {}
     if train_mode:
         print(f"Training unconditional flow matching model for {epochs} epochs")
         start_time = time.time()
@@ -310,12 +310,12 @@ def main():
     # ######################################## Question Answering #######################################################
     # ###################################################################################################################
     fm_model, fm_results = utils.load_model(model_path=f"{MODEL_PATH}/fm_model_20_epochs.pth",
-                                         results_path=f"{RESULTS_PATH}/fm_results_20_epochs.pkl",
-                                         device=device)
+                                            results_path=f"{RESULTS_PATH}/fm_results_20_epochs.pkl",
+                                            device=device)
 
     cfm_model, cfm_results = utils.load_model(model_path=f"{MODEL_PATH}/cfm_model_20_epochs.pth",
-                                    results_path=f"{RESULTS_PATH}/cfm_results_20_epochs.pkl",
-                                    device=device)
+                                              results_path=f"{RESULTS_PATH}/cfm_results_20_epochs.pkl",
+                                              device=device)
     run_part_2(fm_model, fm_results, config["epochs"], device, uc_filenames)
     run_part_3(cfm_model, color_map, device, c_filenames)
     run_bonus(fm_model, device)
