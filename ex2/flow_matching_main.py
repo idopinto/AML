@@ -178,22 +178,22 @@ def Part_3_Q3_sampling(model, color_map, device='cpu', filename=''):
 
 
 def run_part_2(model, results, epochs, device, filenames):
-    Part_2_Q1_Loss(epochs, results, filename=filenames[0])
-    Part_2_Q2_flow_progression(model, n_samples=1000,
-                               time_steps=torch.tensor([0, 0.2, 0.4, 0.6, 0.8, 1.0], device=device),
-                               device=device, filename=filenames[1])
-    Part_2_Q3_point_trajectory(model,
-                               n_samples=10,
-                               device=device,
-                               filename=filenames[2])
+    # Part_2_Q1_Loss(epochs, results, filename=filenames[0])
+    # Part_2_Q2_flow_progression(model, n_samples=1000,
+    #                            time_steps=torch.tensor([0, 0.2, 0.4, 0.6, 0.8, 1.0], device=device),
+    #                            device=device, filename=filenames[1])
+    # Part_2_Q3_point_trajectory(model,
+    #                            n_samples=10,
+    #                            device=device,
+    #                            filename=filenames[2])
     Part_2_Q4_time_quantization(model,
                                 n_samples=1000,
-                                delta_ts=[0.002, 0.02, 0.05, 0.1, 0.2, 0.3],
+                                delta_ts=[0.002, 0.02, 0.05, 0.1, 0.2, 1/3],
                                 device=device,
                                 filename=filenames[3])
-    Part_2_Q5_reversing_the_flow(model, device=device,
-                                 filenames=[filenames[4],
-                                            filenames[5]])
+    # Part_2_Q5_reversing_the_flow(model, device=device,
+    #                              filenames=[filenames[4],
+    #                                         filenames[5]])
 
 
 def run_part_3(model, color_map, device, c_filenames):
@@ -317,8 +317,8 @@ def main():
                                               results_path=f"{RESULTS_PATH}/cfm_results_20_epochs.pkl",
                                               device=device)
     run_part_2(fm_model, fm_results, config["epochs"], device, uc_filenames)
-    run_part_3(cfm_model, color_map, device, c_filenames)
-    run_bonus(fm_model, device)
+    # run_part_3(cfm_model, color_map, device, c_filenames)
+    # run_bonus(fm_model, device)
 
 
 if __name__ == '__main__':
