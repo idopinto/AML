@@ -3,6 +3,7 @@ import torch.nn as nn
 from torchvision.models import resnet18
 
 
+# f - encoder function
 class Encoder(nn.Module):
     def __init__(self, D=128, device='cuda'):
         super(Encoder, self).__init__()
