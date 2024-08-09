@@ -4,6 +4,17 @@ import utils
 
 
 def training_step(model, train_loader, criterion, optimizer, scheduler, device):
+    """
+    Perform a single training step, iterating over the training data, computing loss, and updating model weights.
+
+    :param model: The model to be trained.
+    :param train_loader: DataLoader containing the training data.
+    :param criterion: Loss function to calculate the loss.
+    :param optimizer: Optimizer for updating the model parameters.
+    :param scheduler: Learning rate scheduler.
+    :param device: The device to run the computations on (CPU or GPU).
+    :return: The average training loss over the entire dataset.
+    """
     model.train()
     training_loss = 0
     for batch in tqdm(train_loader):
@@ -20,6 +31,15 @@ def training_step(model, train_loader, criterion, optimizer, scheduler, device):
 
 
 def validation_step(model, val_loader, criterion, device):
+    """
+    Perform a single validation step, iterating over the validation data and computing loss without updating model weights.
+
+    :param model: The model to be validated.
+    :param val_loader: DataLoader containing the validation data.
+    :param criterion: Loss function to calculate the loss.
+    :param device: The device to run the computations on (CPU or GPU).
+    :return: Tuple containing the average validation loss, total log probability, and total log determinant over the dataset.
+    """
     model.eval()
     val_loss = total_log_det = total_log_prob = 0
     with torch.inference_mode():
@@ -35,6 +55,22 @@ def validation_step(model, val_loader, criterion, device):
 
 def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epochs, device, save=True,
           model_save_dir_path=None, train_results_dir_path=None):
+    """
+    Train the model over a specified number of epochs, and optionally save the trained model and results.
+
+    :param model: The model to be trained.
+    :param train_loader: DataLoader containing the training data.
+    :param val_loader: DataLoader containing the validation data.
+    :param criterion: Loss function to calculate the loss.
+    :param optimizer: Optimizer for updating the model parameters.
+    :param scheduler: Learning rate scheduler.
+    :param epochs: Number of training epochs.
+    :param device: The device to run the computations on (CPU or GPU).
+    :param save: Boolean flag indicating whether to save the trained model and results.
+    :param model_save_dir_path: Directory path to save the trained model.
+    :param train_results_dir_path: Directory path to save the training results.
+    :return: Dictionary containing training and validation losses, as well as log determinant and log probability over epochs.
+    """
     results = {
         "train_loss": [],
         "validation_loss": [],
@@ -56,4 +92,3 @@ def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epoc
         utils.save_model(model, results, model_save_dir_path, train_results_dir_path, model_path, results_path)
 
     return results
-
