@@ -164,10 +164,12 @@ def Part_2_Q5_reversing_the_flow(model, device='cpu', filenames=()):
     out_points = torch.tensor([[-1.44, -1.44], [1.8, 1.8]], device=device)
 
     data = torch.cat((in_points, out_points))
+    # print(f"original data:{data}")
     z, inverse_trajectory = propagate_through_time(model, data, initial_t=1, target_t=0, delta_t=0.001,
                                                    get_trajectory=True)
 
     y, trajectory = propagate_through_time(model, z, initial_t=0, target_t=1, delta_t=0.001, get_trajectory=True)
+    # print(f"Transformed data:{y}")
     utils.plot_trajectories(n_samples=5,
                             layer_outputs=inverse_trajectory,
                             title=f"5 Points inverse trajectory through time",
@@ -420,8 +422,8 @@ def main():
                                               results_path=f"{RESULTS_PATH}/cfm_results_20_epochs.pkl",
                                               device=device)
     run_part_2(fm_model, fm_results, config["epochs"], device, uc_filenames)
-    run_part_3(cfm_model, color_map, device, c_filenames)
-    run_bonus(fm_model, device)
+    # run_part_3(cfm_model, color_map, device, c_filenames)
+    # run_bonus(fm_model, device)
 
 
 if __name__ == '__main__':
