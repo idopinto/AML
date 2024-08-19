@@ -37,4 +37,26 @@ class Projector(nn.Module):
     def forward(self, x):
         return self.model(x)
 
+class VICRegModel(nn.Module):
+    def __init__(self, D=128, proj_dim=512, device='cpu'):
+        super(VICRegModel, self).__init__()
+        self.encoder = Encoder(D, device).to(device)
+        self.projector = Projector(D, proj_dim).to(device)
+        self.name = "vicreg"
 
+    def forward(self, x):
+        y = self.encoder(x)
+        z = self.projector(y)
+        return y, z
+
+
+class VICRegLinearProbing(nn.Module):
+  def __init__(self, vic_reg_model, D, num_classes):
+    super().__init__()
+    self.encoder = vic_reg_model.encoder
+    self.fc = nn.Linear(in_features= D, out_features=num_classes)
+    self.name = "vicreg_lp"
+  def forward(self, x):
+    y = self.encoder(x)
+    z = self.fc(y)
+    return z
