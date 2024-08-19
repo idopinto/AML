@@ -3,13 +3,12 @@ import random
 import faiss
 import numpy as np
 from matplotlib import pyplot as plt
-# defining CIFAR10_CLASSES
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import data_setup
-from augmentations import *
+from augmentations import train_transform, test_transform
 from config_class import *
 
 CIFAR10_CLASSES = [
@@ -163,31 +162,38 @@ def perform_pca_or_tsne(Y, n_components, dim_reduction_type="pca"):
     print("The dimensionality reduction type can be either PCA or t-SNE.")
 
 
-def get_image_representations(model, batch_size=256, filename=Path("")):
+def get_image_representations(model, batch_size=256, test_loader=None, filename=None):
     # load image representations file if already computed
-    if filename.exists():
+    if filename is not None and filename.exists():
         print("Image representations already exist. Loading..")
         Y = torch.load(filename).astype(np.float32)
         print("Loaded successfully!")
         return Y
-
+    Y, labels= [], []
     # get original trainset and train loader
-    orig_trainset = data_setup.OriginalCIFAR10(root=data_dir, train=True, transform=test_transform)
-    train_loader = DataLoader(orig_trainset, batch_size=batch_size, shuffle=False, num_workers=2)
-    # compute the image representations and save them for later.
-    print("Computing the image representations...")
-    Y = []
-    with torch.inference_mode():
-        for images, _ in tqdm(train_loader):
-            Y.append(model.encoder.encode(images.to(device)).cpu().numpy())
-
+    if test_loader is None:
+        orig_trainset = data_setup.OriginalCIFAR10(root=data_dir, train=True, transform=test_transform)
+        train_loader = DataLoader(orig_trainset, batch_size=batch_size, shuffle=False, num_workers=2)
+        # compute the image representations and save them for later.
+        print("Computing the image representations...")
+        model.eval()
+        with torch.inference_mode():
+            for images, lbls in tqdm(train_loader):
+                Y.append(model.encoder.encode(images.to(device)).cpu().numpy())
+    else:
+        model.eval()
+        with torch.inference_mode():
+            for images, lbls in tqdm(test_loader):
+                Y.append(model.encoder.encode(images.to(device)).cpu().numpy())
+                labels.append(lbls)
+            labels = torch.cat(labels)
     # Concatenate all features and labels
     Y = np.concatenate(Y, axis=0)
     if filename:
         torch.save(Y, filename)
         print(f"Image representations saved in: {filename}")
 
-    return Y
+    return Y if test_loader is None else (Y, labels)
 
 
 def get_nearest_neighbors(Y, filename=Path(""), k=4):
