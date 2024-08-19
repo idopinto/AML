@@ -1,10 +1,7 @@
 import pickle
-from random import random
-
+import random
 import faiss
 import numpy as np
-import torch
-from pathlib import Path
 from matplotlib import pyplot as plt
 # defining CIFAR10_CLASSES
 from sklearn.decomposition import PCA
