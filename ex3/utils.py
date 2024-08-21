@@ -37,7 +37,7 @@ def load_model(model, model_path, device='cpu', verbose=False):
     model.load_state_dict(state_dict)
     model.to(device)
     if verbose:
-        print("The model loaded successfully!")
+        print(f"{model_path} loaded successfully!")
     return model
 
 
@@ -167,8 +167,9 @@ def get_image_representations(model, batch_size=256, test_loader=None, filename=
     if filename is not None and filename.exists():
         print("Image representations already exist. Loading..")
         Y = torch.load(filename).astype(np.float32)
-        print("Loaded successfully!")
+        print(f"{filename} successfully!")
         return Y
+
     Y, labels= [], []
     # get original trainset and train loader
     if test_loader is None:
@@ -187,9 +188,8 @@ def get_image_representations(model, batch_size=256, test_loader=None, filename=
                 Y.append(model.encoder.encode(images.to(device)).cpu().numpy())
                 labels.append(lbls)
             labels = torch.cat(labels)
-    # Concatenate all features and labels
     Y = np.concatenate(Y, axis=0)
-    if filename:
+    if filename is not None:
         torch.save(Y, filename)
         print(f"Image representations saved in: {filename}")
 

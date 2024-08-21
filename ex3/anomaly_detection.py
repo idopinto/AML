@@ -23,7 +23,7 @@ def get_knn_density(vicreg_model,trainset_embeddings, test_loader, k=3):
 def plot_roc_curve(y_true, y_score, model_type =None, filename=None):
     fpr, tpr, thresholds = roc_curve(y_true, y_score)
     roc_auc = auc(fpr, tpr)
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10,10))
     ax.plot(fpr, tpr, color='blue', label='ROC curve (area = %0.2f)' % roc_auc)
     ax.plot([0, 1], [0, 1], color='navy', linestyle='--')
     ax.set_xlim([0.0, 1.0])
@@ -42,8 +42,10 @@ def do_anomaly_detection(base_config,model_path, model_type, repr_path, plot1_pa
     vicreg_model = get_loaded_model(config=base_config, model_path=model_path)
     testset = CIFAR10_MIXED_WITH_MNIST(root=data_dir,transform=test_transform, download=True)
     test_loader = DataLoader(testset, batch_size=base_config.batch_size, shuffle=False)
+
     testset_no_aug = CIFAR10_MIXED_WITH_MNIST(root=data_dir,transform=None, download=True)
     test_loader_no_aug = DataLoader(testset_no_aug, batch_size=base_config.batch_size, shuffle=False)
+
     trainset_embeddings = get_image_representations(vicreg_model,base_config.batch_size, filename=repr_path)
     knn_density, labels = get_knn_density(vicreg_model, trainset_embeddings, test_loader,k=3)
     plot_roc_curve(y_true=labels, y_score=knn_density,model_type=model_type, filename=plot1_path)
@@ -82,7 +84,7 @@ def main():
                          model_path=models_dir / "VICReg_model_30_epochs_.pth",
                          model_type = "VICReg Model with generated neighbors",
                          repr_path = data_dir / "train_CIFAR10_Y_by_vicreg_30",
-                         plot1_path = plots_dir/f"p2q2roc_curve_orig_vicreg.png",
+                         plot1_path = plots_dir/f"p2q2_roc_curve_orig_vicreg.png",
                          plot2_path = plots_dir/f"p2q3_qualitative_evaluation_orig_vicreg.png"
                          )
 
@@ -90,7 +92,7 @@ def main():
                          model_path=models_dir / "VICReg_model_1_epochs_no_gen_neighbors.pth",
                          model_type = "VICReg Model with no generated neighbors",
                          repr_path = data_dir/"train_CIFAR10_Y_by_vicreg_ngn_1_epoch",
-                         plot1_path = plots_dir/f"roc_curve_orig_vicreg_ngn.png",
+                         plot1_path = plots_dir/f"p2q2_roc_curve_orig_vicreg_ngn.png",
                          plot2_path = plots_dir / f"p2q3_qualitative_evaluation_vicreg_ngn.png"
                          )
 
