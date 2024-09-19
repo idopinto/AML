@@ -7,11 +7,6 @@ import faiss
 from sklearn.metrics import roc_curve, auc
 
 
-def get_loaded_model(config, model_path):
-    model = VICRegModel(D=config.D, proj_dim=config.proj_dim).to(device)
-    return load_model(model, model_path=model_path, device=device)
-
-
 def get_knn_density(vicreg_model,trainset_embeddings, test_loader, k=3):
     testset_embeddings, labels = get_image_representations(vicreg_model, batch_size=256, test_loader=test_loader)
     index = faiss.IndexFlatL2(trainset_embeddings.shape[1])
@@ -39,16 +34,21 @@ def plot_roc_curve(y_true, y_score, model_type =None, filename=None):
 
 
 def do_anomaly_detection(base_config,model_path, model_type, repr_path, plot1_path,plot2_path):
+    # Load model
     vicreg_model = get_loaded_model(config=base_config, model_path=model_path)
+    # get test set (with anomalies) and test loader
     testset = CIFAR10_MIXED_WITH_MNIST(root=data_dir,transform=test_transform, download=True)
     test_loader = DataLoader(testset, batch_size=base_config.batch_size, shuffle=False)
-
+    # get test set and test loader with no transformations for qualitative evaluation
     testset_no_aug = CIFAR10_MIXED_WITH_MNIST(root=data_dir,transform=None, download=True)
     test_loader_no_aug = DataLoader(testset_no_aug, batch_size=base_config.batch_size, shuffle=False)
-
+    # get the normal data embeddings (50000, 128)
     trainset_embeddings = get_image_representations(vicreg_model,base_config.batch_size, filename=repr_path)
+    # get knn density and labels for plotting the roc curve (20000, 1)
     knn_density, labels = get_knn_density(vicreg_model, trainset_embeddings, test_loader,k=3)
+    # q2 plot the roc curve with auc.
     plot_roc_curve(y_true=labels, y_score=knn_density,model_type=model_type, filename=plot1_path)
+    # plot the 7 most anomalous samples according to the model.
     qualitative_evaluation(knn_density, test_loader_no_aug, m=7, filename=plot2_path)
 
 

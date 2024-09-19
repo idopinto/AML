@@ -10,6 +10,7 @@ from tqdm import tqdm
 import data_setup
 from augmentations import train_transform, test_transform
 from config_class import *
+from models import VICRegModel
 
 CIFAR10_CLASSES = [
     'airplane', 'automobile', 'bird', 'cat', 'deer',
@@ -40,6 +41,9 @@ def load_model(model, model_path, device='cpu', verbose=False):
         print(f"{model_path} loaded successfully!")
     return model
 
+def get_loaded_model(config, model_path):
+    model = VICRegModel(D=config.D, proj_dim=config.proj_dim).to(device)
+    return load_model(model, model_path=model_path, device=device)
 
 def load_collectors(collectors_path, verbose=False):
     with open(collectors_path, 'rb') as file:
@@ -142,7 +146,7 @@ def plot_images(random_images, random_labels):
     plt.show()
 
 ################## COMPUTATIONAL HELPER METHODS #######################
-def perform_pca_or_tsne(Y, n_components, dim_reduction_type="pca"):
+def perform_pca_or_tsne(Y, n_components, dim_reduction_type="pca", perplexity=150):
     if dim_reduction_type == "pca":
         # perform PCA
         print("Performing PCA on images representations..")
@@ -155,7 +159,7 @@ def perform_pca_or_tsne(Y, n_components, dim_reduction_type="pca"):
         # Perform t-SNE
         print("Performing t-SNE on images representations..")
         # tsne = TSNE(n_components=n_components, random_state=0)
-        tsne = TSNE(n_components=2, perplexity=150, n_iter=300)
+        tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=300)
         Y_reduced_tsne = tsne.fit_transform(Y)
         print("t-SNE finished..")
         return Y_reduced_tsne
