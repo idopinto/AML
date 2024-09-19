@@ -67,7 +67,7 @@ def do_clustring(base_config, model_path, model_type, repr_path, plot_path, n_cl
     kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(reduced_embeddings)
     centroids = kmeans.cluster_centers_
     cluster_labels = kmeans.labels_
-    silhouette_score_val = silhouette_score(trainset_embeddings, cluster_labels)
+    silhouette_score_val = silhouette_score(reduced_embeddings, cluster_labels)
     plot_clusters(tsne_embeddings=reduced_embeddings,
                   kmeans_labels=cluster_labels,
                   actual_labels=train_classes,
